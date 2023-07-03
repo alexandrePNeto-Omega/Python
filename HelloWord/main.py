@@ -35,7 +35,7 @@ def virifiOp(string):
         result  = mountResult(str(n1), str(n2), string, str(n1 + n2))
 
     elif string == "-":
-        nome    = "subtraçã"
+        nome    = "subtração"
         result  = mountResult(str(n1), str(n2), string, str(n1 - n2))
 
     elif string == "/":
@@ -83,16 +83,19 @@ while True:
 
 #   Relatório de tentativas
 print()
-print("\n------ Relatório de tentativas ------")
+print("\n-------- Relatório de tentativas --------")
 for t in relList:
     print(str(count) + "º tentativa executada com " + str(t).lower() + ".")
     count += int(1)
 
-if countFalse !=  1:
+if countFalse > 1:
     concatFinal += "s"
 
 if countTrue != 1:
     print(finalMesg + str(countTrue) +  " operações com suceso & " + str(countFalse) + " " + str(concatFinal))
+
+elif countFalse == 0:
+    print("Nenhum operação realizada.")
 
 else:
     print(finalMesg + str(countTrue) +  " operação com suceso & " + str(countFalse) + " " + str(concatFinal))

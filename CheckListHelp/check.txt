@@ -1,0 +1,4 @@
+Configuração -  teste - Data: data Grupo: grupo Obrigatório: sim.
+Informação -  teste - Data: data Grupo: grupo Obrigatório: sim.
+Instalação -  - Data: data Grupo: grupo Obrigatório: nao.
+Ajuste -  teste - Data: data Grupo: grupo Obrigatório: sim.
