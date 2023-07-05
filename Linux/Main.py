@@ -8,12 +8,12 @@ for p in txtProcess:
     #   Identifica a palavra
     for c in listP:
         if c != 'root' and c != '':
-            strKill = 'kill' + str(c) + "\n"
+            strKill = 'kill ' + str(c) + "\n"
             listToKill += [strKill]
             break
 
 #   Gerando o arquivo
-result  = open("reult.txt", "a")
+result  = open("reult.txt", "w")
 result.writelines(listToKill)
 print("\n------- ARQUIVO GERADO COM SUCESSO! -------")
 

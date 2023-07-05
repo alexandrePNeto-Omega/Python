@@ -37,7 +37,6 @@ def chkWordAnalict(string):
     content = string.replace(string[0], '')
     return action + " -" + content + " - " + config.rstrip() + ".\n"
 
-
 ####    MAIN
 print("---------- CHECK LIST HELP ----------\n")
 
