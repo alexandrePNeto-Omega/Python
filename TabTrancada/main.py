@@ -1,5 +1,13 @@
 print("\n------------ TABELA TRANCADA ------------\n")
 
-tabela = input("Nome da tabela: ")
+while True:
 
-print("\nselect pg_terminate_backend(pid) from pg_locks where relation=(select oid from pg_class where relname=\'"+tabela+"\') and mode like '%ExclusiveLock';")
+    tabela = input("Nome da tabela: ")
+
+    if tabela == 'stop':
+        break
+
+    print("\nselect pg_terminate_backend(pid) from pg_locks where relation=(select oid from pg_class where relname=\'"+tabela+"\') and mode like '%ExclusiveLock';")
+    print("\n+-------------+\n")
+
+print("\n---------- PROGRAMA FINALIZADO ----------\n")
