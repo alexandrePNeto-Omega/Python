@@ -1,4 +1,10 @@
-Configuração -  teste - Data: data Grupo: grupo Obrigatório: sim.
-Informação -  teste - Data: data Grupo: grupo Obrigatório: sim.
-Instalação -  - Data: data Grupo: grupo Obrigatório: nao.
-Ajuste -  teste - Data: data Grupo: grupo Obrigatório: sim.
+Titulo: asfa
+Operador não registrado -sf.
+ > Data: ASF
+ > Grupo: ASF
+ > Obrigatório: A
+Operador não registrado -ffa.
+ > Data: 
+ > Grupo: ASF
+ > Obrigatório: ASF
+Evidência - Coletada as informações sobre o processo ao todo - Data: Bolean Grupo: Remoto Obrigatório: SIM.

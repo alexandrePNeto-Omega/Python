@@ -25,8 +25,8 @@ def verifiConfig():
     resultListConfig    = ''
 
     for c in configList:
-        txt = input(str(c) + ': ')
-        resultListConfig += str(c) +": " + txt + " "
+        txt = input(" > "+str(c) + ': ')
+        resultListConfig += " > " + str(c) +": " + txt.upper() + "\n"
 
     return resultListConfig
 
@@ -35,12 +35,12 @@ def chkWordAnalict(string):
     config  = verifiConfig()
     action  = verifiAction(string)
     content = string.replace(string[0], '')
-    return action + " -" + content + " - " + config.rstrip() + ".\n"
+    return action + " -" + content + ".\n" + config.rstrip() + "\n"
 
 ####    MAIN
 print("---------- CHECK LIST HELP ----------\n")
 
-print("Açõoes:")
+print("AÇÕES:\n")
 print(" 1 - Configuração\n 2 - Ajuste\n 3 - Instalação\n 4 - Download\n 5 - Informação\n 6 - Criação\n 7 - Ativação\n")
 
 title       = input("Insira o título do CheckList: ")
@@ -51,15 +51,26 @@ print()
 
 print("---------- "+ title.upper() +" ----------")
 while True:
-    check   = input("Informe sobre o check: ")
+    check   = input("\nInforme sobre o check: ")
     
     if check == secret_word:
+        print()
         break
     
     checkList += [chkWordAnalict(check)]
 
 for ck in  checkList:
     print(ck)
-    
+
+
+open("check.txt", "w") 
 arquivo = open("check.txt", "a")
+arquivo.write("Titulo: " + title + "\n")
 arquivo.writelines(checkList)
+# string = "Evidência - Coletada as informações sobre o processo ao todo
+# +"" > Data: Bolean ""
+#  > Grupo: 
+#  > Remoto Obrigatório: SIM."
+arquivo.write("Evidência - Coletada as informações sobre o processo ao todo - Data: Bolean Grupo: Remoto Obrigatório: SIM.")
+
+# Evidência - Coletada as informações sobre o processo ao todo
