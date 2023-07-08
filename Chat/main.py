@@ -8,8 +8,8 @@ class User:
 
 ####    Functions
 def chatShow():
-    #   Getting first user was sent a msg
     try:
+        #   Getting first user was sent a msg
         firstAqr = open("chat.txt", "r")
         listAqr = firstAqr.readlines()
         lastUser = str(str(listAqr[0]).split(':')[0])
@@ -24,14 +24,13 @@ def chatShow():
                     #   Hour                
                     hora = datetime.datetime.now()
                     finalTime = str(hora).split('.')
-                    nowUser = str(formtMsg.split(':')[0])
-                    
+
                     #   Print, validete & lastUser
+                    nowUser = str(formtMsg.split(':')[0])
                     if nowUser != lastUser:
                         print('\n' + finalTime[0] + ' ' + m.replace('\n', ''))
                     else:
                         print(finalTime[0] + ' ' + m.replace('\n', ''))
-
                     tempList += [str(m.replace('\n', '')) + ' - &$#@24!%@\n']   
                     lastUser = formtMsg.split(':')[0] 
 
@@ -61,10 +60,14 @@ choise  = str(input("\nDeseja iniciar a tela de bate-papo? (S/n) -> ")).upper()
 if choise != "S":
     user = regUser()
     while True:
-        msg = str(input("\nTexto: "))
-        if msg == "./":
+        try:
+            msg = str(input("\nTexto: "))
+            if msg == "./":
+                break
+            cadMsg(user, msg)
+        except:
+            print()
             break
-        cadMsg(user, msg)
     print("\n----------------- CHAT FINALIZADO -----------------")
 else:
     print("\n > Chat iniciado com sucesso, bom proveito!")
