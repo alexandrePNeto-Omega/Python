@@ -1,24 +1,12 @@
+####    Import's
 import datetime
 
-
-countID = int(0)
-
+####    Class's
 class Usuario:
     def __init__(self, nome):
         self.nome   = nome
 
-# def chatShow():
-#     while True:
-#         arq = open("chat.txt", "r")
-#         listMsg = arq.readlines()
-#         tempList = ['']
-#         for m in listMsg:
-#             if 'envida' not in str(m.replace('\n', '')):
-#                 print(m.replace('\n', '')+"\n")
-#                 reset  = open("chat.txt", "w")
-#                 tempList += [str(m.replace('\n', '')) + ' - envida\n']
-#                 reset.writelines(tempList)
-
+####    Functions
 def chatShow():
     while True:
         arq = open("chat.txt", "r")
@@ -43,7 +31,7 @@ def cadMsg(user, msg):
     arquivo = open("chat.txt", "a")
     arquivo.write(user.nome + ": " + msg + "\n")
 
-####    MAIN
+####    Main
 print("\n--------------- BEM-VINDO AO CHAT ---------------\n")
 
 choise  = str(input("Deseja iniciar a tela de bate-papo? (S/n) ")).upper()
