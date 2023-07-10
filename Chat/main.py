@@ -1,5 +1,6 @@
 ####    Import's
 import datetime
+import time
 
 ####    Class's
 class User:
@@ -18,6 +19,7 @@ def chatShow():
             arq = open("chat.txt", "r")
             listMsg = arq.readlines()
             tempList = ['']
+            time.sleep(0.50)
             for m in listMsg:
                 formtMsg = str(m.replace('\n', ''))
                 if '&$#@24!%@' not in formtMsg and formtMsg != '':
