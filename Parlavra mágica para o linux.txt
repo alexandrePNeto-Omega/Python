@@ -1,1 +1,4 @@
-# -*- coding: utf-8 -*-
+Para o encoding do linux: # -*- coding: utf-8 -*-
+
+Para os inputs no linux: raw_input()
+

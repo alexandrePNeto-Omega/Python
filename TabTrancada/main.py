@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 print("\n------------ TABELA TRANCADA ------------\n")
 
 while True:
