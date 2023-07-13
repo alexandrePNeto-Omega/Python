@@ -3,7 +3,7 @@ print("\n------------ TABELA TRANCADA ------------\n")
 
 while True:
 
-    tabela = input("Nome da tabela: ")
+    tabela = input("Nome da tabela: ").replace(' ', '')
 
     if tabela == 'stop':
         break
