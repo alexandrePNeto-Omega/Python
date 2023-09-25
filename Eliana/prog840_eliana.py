@@ -13,6 +13,8 @@ from classe.config import Config
 from util.asfind import *
 from manutencao.manut_prog import ManutProgBase
 
+import os
+
 from reportlab.lib.units import mm
 from reportlab.pdfgen.canvas import Canvas
 
@@ -31,69 +33,77 @@ class ManutProg(ManutProgBase, LztGtkApp):
 		self.L = LinasStruct(ws)
 		self.PMT = PdfMailTo(ws)
 		
-	def run(self, console=True):
-		PMT = PdfMailTo(self.ws)
-		L = LinasStruct(self.ws)
-		file_list = []
-		empresa_list = L.retorno_empresas()
-		empresa_list_local = []
-
-		filename = tempfile.mktemp("TODAS_EMPS_rel_"+now().strftime("%d-%m-%Y_%H-%M-%S")+".pdf")
-		report = Canvas(filename)
-
-		pdf = PdfMakeBuild(self.ws)
-		pdf.do_header_pdf(report)
-
-		for empresa_dict in empresa_list:
-			file_list.append(self.pdf_empresa(empresa_dict))
-			empresa_list_local += [empresa_dict]
-
-		pdf.write_lines_pdf(empresa_list_local, report)
-
-		report.showPage()
-		report.save()
-		file_list.append(filename)
-		PMT.send_mail(file_list)
-
-		return True
-
-	def pdf_empresa(self, empresa_dict):
-		tempFile = tempfile.mktemp(str(empresa_dict.get('nome')) + "_rel.pdf")
-		report = Canvas(tempFile)
-		pdf = PdfMakeBuild(self.ws)
-		pdf.do_header_pdf(report)
-		pdf.write_lines_pdf([empresa_dict], report)
-		report.showPage()
-		report.save()
-		return tempFile
-
-##########################################################################################################
 	# def run(self, console=True):
-	# 	#	Objetivo: Rodar o prog
-
-	# 	empresa_list = self.L.retorno_empresas()
+	# 	PMT = PdfMailTo(self.ws)
+	# 	L = LinasStruct(self.ws)
+	# 	file_list = []
+	# 	empresa_list = L.retorno_empresas()
 	# 	empresa_list_local = []
 
-	# 	for empresa_dict in empresa_list:
-	# 		self.pdf_empresa(empresa_dict)
-	# 		empresa_list_local += [empresa_dict]
-			
-	# 	report = Canvas("TODAS AS EMPRESA_rel.pdf")
+	# 	filename = tempfile.mktemp("TODAS_EMPS_rel_"+now().strftime("%d-%m-%Y_%H-%M-%S")+".pdf")
+	# 	report = Canvas(filename)
+
 	# 	pdf = PdfMakeBuild(self.ws)
 	# 	pdf.do_header_pdf(report)
+
+	# 	for empresa_dict in empresa_list:
+	# 		file_list.append(self.pdf_empresa(empresa_dict))
+	# 		empresa_list_local += [empresa_dict]
+
 	# 	pdf.write_lines_pdf(empresa_list_local, report)
+
 	# 	report.showPage()
 	# 	report.save()
+	# 	file_list.append(filename)
+	# 	PMT.send_mail(file_list)
 
 	# 	return True
-	
+
 	# def pdf_empresa(self, empresa_dict):
-	# 	report = Canvas(str(empresa_dict.get('nome')) + "_rel.pdf")
+	# 	tempFile = tempfile.mktemp(str(empresa_dict.get('nome')) + "_rel.pdf")
+	# 	report = Canvas(tempFile)
 	# 	pdf = PdfMakeBuild(self.ws)
 	# 	pdf.do_header_pdf(report)
 	# 	pdf.write_lines_pdf([empresa_dict], report)
 	# 	report.showPage()
 	# 	report.save()
+	# 	return tempFile
+
+##########################################################################################################
+	def run(self, console=True):
+		#	Objetivo: Rodar o prog
+
+		empresa_list_local = []
+		empresa_list = self.L.retorno_empresas()
+		for empresa_dict in empresa_list:
+			# self.pdf_empresa(empresa_dict)
+			empresa_list_local += [empresa_dict]
+
+		#	Empresas separadas			
+		report = Canvas("TODAS_AS_EMPRESA_rel.pdf")
+		pdf = PdfMakeBuild(self.ws)
+		pdf.do_header_pdf(report)
+		pdf.write_lines_pdf(empresa_list_local, report)
+		report.showPage()
+		report.save()
+
+		#	Consolidados
+		report_consolidado = Canvas("TODAS_AS_EMPRESA_CONSOLIDADO_rel.pdf")
+		pdf = PdfMakeBuild(self.ws)
+		pdf.do_header_pdf(report_consolidado)
+		pdf.wirte_lines_pdf_consolidado(empresa_list_local, report_consolidado)
+		report_consolidado.showPage()
+		report_consolidado.save()
+
+		return True
+	
+	def pdf_empresa(self, empresa_dict):
+		report = Canvas(str(empresa_dict.get('nome')) + "_rel.pdf")
+		pdf = PdfMakeBuild(self.ws)
+		pdf.do_header_pdf(report)
+		pdf.write_lines_pdf([empresa_dict], report)
+		report.showPage()
+		report.save()
 ##########################################################################################################
 
 class PdfMailTo:
@@ -131,6 +141,85 @@ class PdfMakeBuild:
 		self.num_pages = 1
 		self.L = LinasStruct(ws)
 
+	def wirte_lines_pdf_consolidado(self, empresa_list, report):
+		self.do_footer_pdf(report)
+		
+		self.draw_title_rel(report, "FATURAMENTO")
+		list_fat_consolidado = []
+		self.draw_words_title_column(report, 10 * mm, self.line_y, "Empresa")
+		for e in empresa_list:
+			result_faturamento_list = self.L.get_faturamento_consolidado(e['grid'])
+			self.draw_words_by_line_column_consoli(report, [self.sub_total_empresa_dict(result_faturamento_list, e['nome'])], "R$")
+			list_fat_consolidado.append(self.sub_total_empresa_dict(result_faturamento_list, e['nome']))
+		self.draw_words_subtotal(report, list_fat_consolidado, "R$")
+
+		self.draw_title_rel(report, "VOLUME")
+		list_vol_consolidado = []
+		self.draw_words_title_column(report, 10 * mm, self.line_y, "Empresa")
+		for e in empresa_list:
+			result_faturamento_list = self.L.get_volume_consolidado(e['grid'])
+			self.draw_words_by_line_column_consoli(report, [self.sub_total_empresa_dict(result_faturamento_list, e['nome'])], "L")
+			list_vol_consolidado.append(self.sub_total_empresa_dict(result_faturamento_list, e['nome']))
+		self.draw_words_subtotal(report, list_vol_consolidado, "L")
+
+		self.draw_title_rel(report, "MARGEM BRUTA")
+		list_mg_consolidado = []
+		self.draw_words_title_column(report, 10 * mm, self.line_y, "Empresa")
+		for e in empresa_list:
+			result_faturamento_list = self.L.get_margem_bruta_consolidado(e['grid'])
+			self.draw_words_by_line_column_consoli(report, [self.sub_total_empresa_dict(result_faturamento_list, e['nome'])], "R$")
+			list_mg_consolidado.append(self.sub_total_empresa_dict(result_faturamento_list, e['nome']))
+		self.draw_words_subtotal(report, list_mg_consolidado, "R$")
+
+		## -- GRUPO -- ##
+
+		report.line(5 * mm, self.line_y, (PAGE_WIDTH  - 5 * mm), self.line_y)
+		self.line_y -= 6 * mm
+
+		fat_list_all = []
+		self.draw_title_rel(report, "FATURAMENTO")
+		self.draw_words_title_column(report, 10 * mm, self.line_y, "Grupo de produto")
+		for e in empresa_list:
+			list_con_fat = self.L.get_faturamento_consolidado(e["grid"])
+			veirfica_fat = self.verifica_nome_list_com_dict("nome", list_con_fat, fat_list_all)
+			if veirfica_fat is not None:
+				for vv_fat in veirfica_fat:
+					if vv_fat.get("nome") != "Erro":
+						fat_list_all.append(
+							self.L.monta_loop_dict([vv_fat.get("nome"), vv_fat.get("dia"), vv_fat.get("mes"), vv_fat.get("ano"),\
+									vv_fat.get("a_dia"), vv_fat.get("a_mes"), vv_fat.get("a_ano")]))			
+		self.draw_words_by_line_column_consoli(report, fat_list_all, "R$")
+		self.draw_words_subtotal(report, fat_list_all, "R$")
+
+		vol_list_all = []
+		self.draw_title_rel(report, "VOLUME")
+		self.draw_words_title_column(report, 10 * mm, self.line_y, "Grupo de produto")
+		for e in empresa_list:
+			list_con_vol = self.L.get_volume_consolidado(e["grid"])
+			veirfica_vol = self.verifica_nome_list_com_dict("nome", list_con_vol, vol_list_all)
+			if veirfica_vol is not None:
+				for vv_vol in veirfica_vol:
+					if vv_vol.get("nome") != "Erro":
+						vol_list_all.append(
+							self.L.monta_loop_dict([vv_vol.get("nome"), vv_vol.get("dia"), vv_vol.get("mes"), vv_vol.get("ano"),\
+									vv_vol.get("a_dia"), vv_vol.get("a_mes"), vv_vol.get("a_ano")]))
+		self.draw_words_by_line_column_consoli(report, vol_list_all, "L")
+		self.draw_words_subtotal(report, vol_list_all, "L")
+
+		mg_list_all = []
+		self.draw_title_rel(report, "MARGEM BRUTA")
+		self.draw_words_title_column(report, 10 * mm, self.line_y, "Grupo de produto")
+		for e in empresa_list:
+			list_con_mg = self.L.get_margem_bruta_consolidado(e["grid"])
+			verifica_mg = self.verifica_nome_list_com_dict("nome", list_con_mg, mg_list_all)
+			if verifica_mg is not None:
+				for vv_mg in verifica_mg:
+					if vv_mg.get("nome") != "Erro":
+						mg_list_all.append(self.L.monta_loop_dict([vv_mg.get("nome"), vv_mg.get("dia"), vv_mg.get("mes"), vv_mg.get("ano"),\
+							vv_mg.get("a_dia"), vv_mg.get("a_mes"), vv_mg.get("a_ano")]))
+		self.draw_words_by_line_column_consoli(report, mg_list_all, "R$")
+		self.draw_words_subtotal(report, mg_list_all, "R$")
+
 	def write_lines_pdf(self, empresa_list, report):
 		self.do_footer_pdf(report)
 
@@ -140,19 +229,19 @@ class PdfMakeBuild:
 
 			#	Relatório numº 1
 			result_faturamento_list = self.L.get_faturamento_consolidado(item['grid'])
-			self.draw_title_rel(report, (5 * mm), "FATURAMENTO")
+			self.draw_title_rel(report, "FATURAMENTO")
 			self.draw_words_by_line_column(report, result_faturamento_list, "R$")
 			self.draw_words_subtotal(report, result_faturamento_list, "R$")
 
 			#	Relatório numº 2
 			result_volume_list = self.L.get_volume_consolidado(item['grid'])
-			self.draw_title_rel(report, (5 * mm),  "VOLUME")
+			self.draw_title_rel(report, "VOLUME")
 			self.draw_words_by_line_column(report, result_volume_list, "L")
 			self.draw_words_subtotal(report, result_volume_list, "L")
 
 			#	Relatório numº 3
 			result_volume_list = self.L.get_margem_bruta_consolidado(item['grid'])
-			self.draw_title_rel(report, (5 * mm), "MARGEM BRUTA")
+			self.draw_title_rel(report, "MARGEM BRUTA")
 			self.draw_words_by_line_column(report, result_volume_list, "R$")
 			self.draw_words_subtotal(report, result_volume_list, "R$")
 
@@ -167,7 +256,40 @@ class PdfMakeBuild:
 			self.line_y = (PAGE_HEIGHT - 5 * mm)
 			self.do_footer_pdf(report)
 			self.num_pages += 1
-		
+
+	def sub_rel_consolidado(self, report, result_dict):
+
+		return 0.0
+
+	def sub_total_empresa_dict(self, result_list, empresa_nome):
+		sum_ano = 0.0
+		sum_mes = 0.0
+		sum_dia = 0.0
+		sum_ano_a = 0.0
+		sum_mes_a = 0.0
+		sum_dia_a = 0.0
+
+		for result_dict in result_list:
+			sum_ano += self.L.convert_float(result_dict.get('ano'))
+			sum_mes += self.L.convert_float(result_dict.get('mes'))
+			sum_dia += self.L.convert_float(result_dict.get('dia'))
+			sum_ano_a += self.L.convert_float(result_dict.get('a_ano'))
+			sum_mes_a += self.L.convert_float(result_dict.get('a_mes'))
+			sum_dia_a += self.L.convert_float(result_dict.get('a_dia'))
+
+		return self.L.monta_loop_dict([empresa_nome, sum_dia, sum_mes, sum_ano,\
+								sum_dia_a, sum_mes_a, sum_ano_a])
+
+	def verifica_nome_list_com_dict(self, param, list_con_fat, fat_list_all):
+		list_of_names = []
+		for i, list_one in enumerate(list_con_fat):
+			if list_one.get(str(param)) not in fat_list_all:
+				list_of_names.append(list_con_fat[i])
+
+		if not list_of_names:
+			return []
+		return list_of_names
+
 	#	Draws auxiliares
 
 	def do_header_pdf(self, report):
@@ -224,7 +346,7 @@ class PdfMakeBuild:
 		report.drawString(y, x, empresa_nome)
 		self.line_y -= 4 * mm
 
-	def draw_title_rel(self, report, x, title):
+	def draw_title_rel(self, report, title):
 		#	Objetivo:	Escrever titulo de cada subrelatório
 		#	Parâmetros:	report => pdf gerado, x-y => posição, titulo => titulo do subrel
 		#	Retorno:	O esoaço que ele ocupa
@@ -232,14 +354,14 @@ class PdfMakeBuild:
 		self.verifica_more_page(report)
 		self.draw_title_rel_acumulado(report, (142 * mm), self.line_y,  title)
 		report.setFont("Helvetica-Bold", 7)
-		report.drawString((x + 5 * mm), self.line_y + 0.3 * mm, title)
+		report.drawString((10 * mm), self.line_y + 0.3 * mm, title)
 		self.line_y -= 5 * mm
 
 	def draw_title_rel_acumulado(self, report, x, y, title):
 		report.setFont("Helvetica-Bold", 7)
 		report.drawString((x + 0.5 * mm), y + 0.3 * mm, str(title + " ACUMULADO"))
 
-	def draw_words_title_column(self, report, x, y):
+	def draw_words_title_column(self, report, x, y, nome):
 		#	Objetivo:	Escrever titulo de cada coluna na tabela
 		#	Parâmetros:	report => pdf gerado, x-y => eixos
 
@@ -251,7 +373,7 @@ class PdfMakeBuild:
 
 		report.setFont("Helvetica-Bold", 7)	
 		report.setFillColorRGB(0, 0, 0, alpha=1)
-		report.drawString(x, y, "Grupo do produto")
+		report.drawString(x, y, str(nome))
 		x += 49.3 * mm
 		report.drawString(x, y, "Ano - " + date(day= (now().day - 1), month= now().month, year=(now().year - 1)).strftime("%d/%m/%Y"))
 		x += 26 * mm
@@ -275,7 +397,7 @@ class PdfMakeBuild:
 		count_less_x_title = 10 * mm
 		line = 0
 
-		self.draw_words_title_column(report, count_less_x_title, self.line_y)
+		self.draw_words_title_column(report, count_less_x_title, self.line_y, "Grupo de produto")
 
 		for result in result_faturamento_list:
 			report.setFont("Helvetica", 7)
@@ -302,6 +424,47 @@ class PdfMakeBuild:
 			report.drawString(column_x, (self.line_y + 0.5 * mm), str(str(um_title) + " " + str(TFloatDef.format(self.L.convert_float(result.get('a_dia'))).rjust(2))))
 
 			self.draw_table_by_line_column(report, self.line_y, line)
+
+			self.verifica_more_page(report)
+			self.line_y -= 3 * mm
+			line += 1
+
+	def draw_words_by_line_column_consoli(self, report, result_faturamento_list, um_title):
+		#	Objetivo:	Criar e gerar todos o relatório de faturamento e volume de cada empresa
+		#	Parâmetros: report => pdf, reulst_deposito_list => a lista de retorno que ele deve 
+		#	desenhar, y => a posição de início no eixo y
+		
+		print(result_faturamento_list)
+
+		line = 0
+		for result in result_faturamento_list:
+			report.setFont("Helvetica", 7)
+			column_x = 10 * mm
+
+			gp_nome = ""
+			if result.get('nome').decode("latin-1") == "Erro":
+				gp_nome = "Sem nenhum movimento registrado"
+			else:
+				gp_nome = result.get('nome').decode("latin-1")
+
+			report.drawString((column_x + 0.5 * mm), (self.line_y + 0.5 * mm), gp_nome)
+			column_x += 49.3 * mm
+			report.drawString((column_x + 0.5 * mm), (self.line_y + 0.5 * mm), str(str(um_title) + " " + str(TFloatDef.format(self.L.convert_float(result.get('ano'))).rjust(2))))
+			column_x += 25.9 * mm
+			report.drawString((column_x + 0.5 * mm), (self.line_y + 0.5 * mm), str(str(um_title) + " " + str(TFloatDef.format(self.L.convert_float(result.get('mes'))).rjust(2))))
+			column_x += 25.9 * mm
+			report.drawString((column_x + 0.5 * mm), (self.line_y + 0.5 * mm), str(str(um_title) + " " + str(TFloatDef.format(self.L.convert_float(result.get('dia'))).rjust(2))))
+			column_x += 30.9 * mm
+			report.drawString(column_x, (self.line_y + 0.5 * mm), str(str(um_title) + " " + str(TFloatDef.format(self.L.convert_float(result.get('a_ano'))).rjust(2))))
+			column_x += 21 * mm
+			report.drawString(column_x, (self.line_y + 0.5 * mm), str(str(um_title) + " " + str(TFloatDef.format(self.L.convert_float(result.get('a_mes'))).rjust(2))))
+			column_x += 21 * mm
+			report.drawString(column_x, (self.line_y + 0.5 * mm), str(str(um_title) + " " + str(TFloatDef.format(self.L.convert_float(result.get('a_dia'))).rjust(2))))
+
+			self.draw_table_by_line_column(report, self.line_y, line)
+
+			print(gp_nome)
+			print(TFloatDef.format(self.L.convert_float(result.get('a_dia'))).rjust(2))
 
 			self.verifica_more_page(report)
 			self.line_y -= 3 * mm
@@ -690,219 +853,6 @@ class LinasStruct:
 			return volume_list
 		else:
 			return [{"nome": "Erro"}]
-
-	# def get_margem_bruta_consolidado(self, empresa):
-	# 	#	Objetivo:	Buscar um relatório de faturamento da empresa.
-	# 	#	Parâmetros:	empresa_grid => grid da empresa
-	# 	#	Retorno:	Dicionário com todos os retornos do select
-
-	# 	mg_list = []
-	# 	mg_list_c = []
-	# 	marge_list = []
-
-	# 	#	Datas
-	# 	today = str('\'' + now().strftime("%Y-%m-%d") + '\'')
-	# 	today_d = str('\'' + now().strftime("%Y-%m-%d") + '\'')
-	# 	sm_d = str('\'' + MonthStart(now()).strftime("%Y-%m-%d") + '\'')
-	# 	em_d = str('\'' + MonthEnd(now()).strftime("%Y-%m-%d") + '\'')
-
-	# 	date_m = Date((now().year), (now().month - 1), (now().day))
-	# 	today_m = str('\'' + date_m.strftime("%Y-%m-%d") + '\'')
-	# 	sm_m = str('\'' + MonthStart(date_m).strftime("%Y-%m-%d") + '\'')
-	# 	em_m = str('\'' + MonthEnd(date_m).strftime("%Y-%m-%d") + '\'')
-
-	# 	date_y = Date((now().year - 1), (now().month), (now().day))
-	# 	today_y = str('\'' + date_y.strftime("%Y-%m-%d") + '\'')
-	# 	sm_y = str('\'' + MonthStart(date_y).strftime("%Y-%m-%d") + '\'')
-	# 	em_y = str('\'' + MonthEnd(date_y).strftime("%Y-%m-%d") + '\'')
-
-	# 	grupo_dict_list = self.db.dictresult('''
-	# 		SELECT grid, nome FROM grupo_produto
-	# 		WHERE flag = \'A\' ORDER BY nome''')
-		
-	# 	combus_dict_list = self.db.dictresult('''
-	# 		SELECT grid, nome FROM produto 
-	# 		WHERE grupo = 192 AND flag = \'A\'
-	# 		ORDER BY nome''')
-
-	# 	for grupo_dict in grupo_dict_list:
-	# 		if int(grupo_dict.get('grid') == 192):
-	# 			for combus_dict in combus_dict_list:
-	# 				E = Estoque(self.ws, empresa)
-	# 				val_list = []
-
-	# 				dia_venda_sum = self.db.dictresult('''
-	# 					SELECT SUM(l.valor) FROM lancto l
-	# 					JOIN produto p ON p.grid = l.produto
-	# 					WHERE p.grid = %s
-	# 					AND l.data = %s
-	# 					AND l.empresa = %s
-	# 					AND l.operacao = \'V\'''' % (combus_dict.get('grid'), today_d, empresa))
-	# 				val_list.append(self.verf_valor_zero(dia_venda_sum[0].get('sum')))
-					
-	# 				mes_venda_sum =	self.db.dictresult('''
-	# 					SELECT SUM(l.valor) FROM lancto l
-	# 					JOIN produto p ON p.grid = l.produto
-	# 					WHERE p.grid = %s
-	# 					AND l.data = %s
-	# 					AND l.empresa = %s
-	# 					AND l.operacao = \'V\'''' % (combus_dict.get('grid'), today_m, empresa))
-	# 				val_list.append(self.verf_valor_zero(mes_venda_sum[0].get('sum')))
-
-	# 				ano_venda_sum =	self.db.dictresult('''
-	# 					SELECT SUM(l.valor) FROM lancto l
-	# 					JOIN produto p ON p.grid = l.produto
-	# 					WHERE p.grid = %s
-	# 					AND l.data = %s
-	# 					AND l.empresa = %s
-	# 					AND l.operacao = \'V\'''' % (combus_dict.get('grid'), today_y, empresa))
-	# 				val_list.append(self.verf_valor_zero(ano_venda_sum[0].get('sum')))
-
-	# 				dia_venda_sum_a = self.db.dictresult('''
-	# 					SELECT SUM(l.valor) FROM lancto l
-	# 					JOIN produto p ON p.grid = l.produto
-	# 					WHERE p.grid = %s
-	# 					AND l.data BETWEEN %s AND %s
-	# 					AND l.empresa = %s
-	# 					AND l.operacao = \'V\'''' % (combus_dict.get('grid'), sm_d, em_d, empresa))
-	# 				val_list.append(self.verf_valor_zero(dia_venda_sum_a[0].get('sum')))
-
-	# 				mes_venda_sum_a = self.db.dictresult('''
-	# 					SELECT SUM(l.valor) FROM lancto l
-	# 					JOIN produto p ON p.grid = l.produto
-	# 					WHERE p.grid = %s
-	# 					AND l.data BETWEEN %s AND %s
-	# 					AND l.empresa = %s
-	# 					AND l.operacao = \'V\'''' % (combus_dict.get('grid'), sm_m, em_m, empresa))
-	# 				val_list.append(self.verf_valor_zero(mes_venda_sum_a[0].get('sum')))
-
-	# 				ano_venda_sum_a = self.db.dictresult('''
-	# 					SELECT SUM(l.valor) FROM lancto l
-	# 					JOIN produto p ON p.grid = l.produto
-	# 					WHERE p.grid = %s
-	# 					AND l.data BETWEEN %s AND %s
-	# 					AND l.empresa = %s
-	# 					AND l.operacao = \'V\'''' % (combus_dict.get('grid'), sm_y, em_y, empresa))
-	# 				val_list.append(self.verf_valor_zero(ano_venda_sum_a[0].get('sum')))
-
-	# 				if not True in val_list:
-	# 					continue
-
-	# 				dia_custo_sum = E.get_cmv(combus_dict.get('grid'), now(), now())
-	# 				dia = self.convert_float(dia_venda_sum[0].get('sum')) - dia_custo_sum
-
-	# 				mes_custo_sum = E.get_cmv(combus_dict.get('grid'), date_m, date_m)
-	# 				mes = self.convert_float(mes_venda_sum[0].get('sum')) - mes_custo_sum
-
-	# 				ano_custo_sum = E.get_cmv(combus_dict.get('grid'), date_y, date_y)
-	# 				ano = self.convert_float(ano_venda_sum[0].get('sum')) - ano_custo_sum
-
-	# 				dia_custo_sum_a = E.get_cmv(combus_dict.get('grid'), MonthStart(now()), MonthEnd(now()))
-	# 				a_dia = self.convert_float(dia_venda_sum_a[0].get('sum')) - dia_custo_sum_a
-
-	# 				mes_custo_sum_a = E.get_cmv(combus_dict.get('grid'), MonthStart(date_m), MonthEnd(date_m))
-	# 				a_mes = self.convert_float(mes_venda_sum_a[0].get('sum')) - mes_custo_sum_a
-
-	# 				ano_custo_sum_a = E.get_cmv(combus_dict.get('grid'), MonthStart(date_y), MonthEnd(date_y))
-	# 				a_ano = self.convert_float(ano_venda_sum_a[0].get('sum')) - ano_custo_sum_a
-
-	# 				build_list = [combus_dict.get('nome'),
-	# 					dia, mes, ano,
-	# 					a_dia, a_mes, a_ano]
-
-	# 				mg_list_c.append(self.monta_loop_dict(build_list))		
-	# 		else:
-	# 			val_list = []
-	# 			dia_venda_sum = self.db.dictresult('''
-	# 				SELECT SUM(l.valor) FROM lancto l
-	# 				JOIN produto p ON p.grid = l.produto
-	# 				WHERE p.grupo = %s
-	# 				AND l.data = %s
-	# 				AND l.empresa = %s
-	# 				AND l.operacao = \'V\'''' % (grupo_dict.get('grid'), today_d, empresa))
-	# 			val_list.append(self.verf_valor_zero(dia_venda_sum[0].get('sum')))
-
-	# 			mes_venda_sum =	self.db.dictresult('''
-	# 				SELECT SUM(l.valor) FROM lancto l
-	# 				JOIN produto p ON p.grid = l.produto
-	# 				WHERE p.grupo = %s
-	# 				AND l.data = %s
-	# 				AND l.empresa = %s
-	# 				AND l.operacao = \'V\'''' % (grupo_dict.get('grid'), today_m, empresa))
-	# 			val_list.append(self.verf_valor_zero(mes_venda_sum[0].get('sum')))
-
-	# 			ano_venda_sum =	self.db.dictresult('''
-	# 				SELECT SUM(l.valor) FROM lancto l
-	# 				JOIN produto p ON p.grid = l.produto
-	# 				WHERE p.grupo = %s
-	# 				AND l.data = %s
-	# 				AND l.empresa = %s
-	# 				AND l.operacao = \'V\'''' % (grupo_dict.get('grid'), today_y, empresa))
-	# 			val_list.append(self.verf_valor_zero(ano_venda_sum[0].get('sum')))
-
-	# 			dia_venda_sum_a = self.db.dictresult('''
-	# 				SELECT SUM(l.valor) FROM lancto l
-	# 				JOIN produto p ON p.grid = l.produto
-	# 				WHERE p.grupo = %s
-	# 				AND l.data BETWEEN %s AND %s
-	# 				AND l.empresa = %s
-	# 				AND l.operacao = \'V\'''' % (grupo_dict.get('grid'), sm_d, em_d, empresa))
-	# 			val_list.append(self.verf_valor_zero(dia_venda_sum_a[0].get('sum')))
-
-	# 			mes_venda_sum_a = self.db.dictresult('''
-	# 				SELECT SUM(l.valor) FROM lancto l
-	# 				JOIN produto p ON p.grid = l.produto
-	# 				WHERE p.grupo = %s
-	# 				AND l.data BETWEEN %s AND %s
-	# 				AND l.empresa = %s
-	# 				AND l.operacao = \'V\'''' % (grupo_dict.get('grid'), sm_m, em_m, empresa))
-	# 			val_list.append(self.verf_valor_zero(mes_venda_sum_a[0].get('sum')))
-				
-	# 			ano_venda_sum_a = self.db.dictresult('''
-	# 				SELECT SUM(l.valor) FROM lancto l
-	# 				JOIN produto p ON p.grid = l.produto
-	# 				WHERE p.grupo = %s
-	# 				AND l.data BETWEEN %s AND %s
-	# 				AND l.empresa = %s
-	# 				AND l.operacao = \'V\'''' % (grupo_dict.get('grid'), sm_y, em_y, empresa))
-	# 			val_list.append(self.verf_valor_zero(ano_venda_sum_a[0].get('sum')))
-
-	# 			if not True in val_list:
-	# 				continue
-
-	# 			dia_custo_sum = self.sum_get_cmv_grupo(grupo_dict.get('grid'), empresa, now(), now())
-	# 			dia = self.convert_float(dia_venda_sum[0].get('sum')) - dia_custo_sum
-			
-	# 			mes_custo_sum = self.sum_get_cmv_grupo(grupo_dict.get('grid'), empresa, date_m, date_m)
-	# 			mes = self.convert_float(mes_venda_sum[0].get('sum')) - mes_custo_sum
-
-	# 			ano_custo_sum = self.sum_get_cmv_grupo(grupo_dict.get('grid'), empresa, date_y, date_y)
-	# 			ano = self.convert_float(ano_venda_sum[0].get('sum')) - ano_custo_sum
-
-	# 			dia_custo_sum_a = self.sum_get_cmv_grupo(grupo_dict.get('grid'), empresa, MonthStart(now()), MonthEnd(now()))
-	# 			a_dia = self.convert_float(dia_venda_sum_a[0].get('sum')) - dia_custo_sum_a
-
-	# 			mes_custo_sum_a = self.sum_get_cmv_grupo(grupo_dict.get('grid'), empresa, MonthStart(date_m), MonthEnd(date_m))
-	# 			a_mes = self.convert_float(mes_venda_sum_a[0].get('sum')) - mes_custo_sum_a
-
-	# 			ano_custo_sum_a = self.sum_get_cmv_grupo(grupo_dict.get('grid'), empresa, MonthStart(date_y), MonthEnd(date_y))
-	# 			a_ano = self.convert_float(ano_venda_sum_a[0].get('sum')) - ano_custo_sum_a
-
-	# 			build_list = [grupo_dict.get('nome'),
-	# 				dia, mes, ano,
-	# 				a_dia, a_mes, a_ano]
-
-	# 			mg_list.append(self.monta_loop_dict(build_list))
-
-	# 	for mg in mg_list:
-	# 		marge_list.append(mg)
-	# 	for mg in mg_list_c:
-	# 		marge_list.append(mg)
-
-	# 	if marge_list:
-	# 		return marge_list
-	# 	else:
-	# 		return [{"nome": "Erro"}]
 	
 	def get_margem_bruta_consolidado(self, empresa):
 		#	Objetivo:	Buscar um relatório de faturamento da empresa.
@@ -1160,19 +1110,6 @@ class LinasStruct:
 		if param:
 			return True
 		return False
-
-	# def sum_get_cmv_grupo(self, grupo, empresa, data_ini, data_fim):
-	# 	E = Estoque(self.ws, empresa)
-	# 	cmv_final = 0.0
-
-	# 	produto_dict_list = self.db.dictresult('''
-	# 	SELECT grid, nome FROM produto 
-	# 		WHERE grupo = %s''' % grupo)
-
-	# 	for produto_dict in produto_dict_list:
-	# 		cmv_final += E.get_cmv(produto_dict.get('grid'), data_ini, data_fim)
-
-	# 	return cmv_final
 	
 	def _sum_get_cmv_grupo(self, grupo, empresa, data_ini, data_fim):
 		cmv_final = 0.0
@@ -1216,4 +1153,5 @@ if __name__ == '__main__':
 	from util.workspace	import ws
 	ws.connect_db()
 	ws.user.load_info(-1)
+	os.environ['ASMODULE'] = 'main'
 	ManutProg(ws).run(console=True)
